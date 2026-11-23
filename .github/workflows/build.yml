@@ -45,6 +45,16 @@ jobs:
         run: |
           python3 "$GITHUB_WORKSPACE/tools/traducir_y_ajustes_dungeons.py" ~/nxnative
 
+      - name: Parche - piel de controles del propio juego (fase 2)
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          # Los PNG son arte del juego: NO van en este repo público; bajan de la release privada
+          mkdir -p ~/skin
+          gh release download game --repo ShebasK0908/dungeons-build --pattern 'controles-dungeons-png.zip' --dir ~/skin
+          cd ~/skin && unzip -o controles-dungeons-png.zip
+          python3 "$GITHUB_WORKSPACE/tools/piel_dungeons.py" ~/nxnative --png-dir ~/skin/controles-dungeons-png
+
       - name: Descargar el juego desde la release privada
         env:
           GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
