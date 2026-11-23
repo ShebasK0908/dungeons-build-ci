@@ -1,0 +1,51 @@
+# Minecraft Dungeons (original), SDK 7.7.0.0, Unreal Engine 4, NVN. Perfil FUSIONADO a mano para la build 2 (2026-11-23):
+# base = la que write_profile habria escrito desde el survey de la build 1 (run 45134042020), con las claves decididas/verificadas:
+# pad_layout full (ficha del perfil provisional), fps 60/120 (los fixups de la build 1 prueban el patron ue_cvar en este main:
+# UE_CVAR rhi.SyncInterval / t.MaxFPS / r.Streaming.PoolSize + UE_FIXED_RATE), depth_mode zero (detectado en el check boot
+# de la build 1), build IDs reales de la v1769472 leidos de las tablas dm/ de la .ipa entregada y verificados contra el ExeFS
+# del update del XCI. SIN op_mode a proposito: el modo lo elige el usuario en el lanzador (DM_OPMODE = DM_GAME_OPMODE, como la build 1).
+# El bloque de memoria es el del guesser y coincide con el layout manual de Minecraft Dungeons II salvo sys_resource (el NPDM
+# de este juego declara 80 MB). Las tablas de shaders vacias las rellena el split durante la build, como en la build 1.
+
+# ---- Identity ----
+title_id	01006C100EC08000
+program_id	01006C100EC08000
+
+# ---- App ----
+name	Minecraft Dungeons
+ipa	MinecraftDungeons.ipa
+app_category	public.app-category.games
+pad_layout	full
+
+# ---- Versions ----
+build	v1769472	1.17.0	main=13f573e3017996e41e3018a128ea6944	subsdk0=53b869228939cca9485d8d758b153cf4	sdk=430702781e271d4efb48530edff83534
+package	v1769472
+shader_versions	v1769472
+
+# ---- Files ----
+modules	main subsdk0 sdk
+romfs_marker	Dungeons/Content/Paks/pakchunk4-Switch.pak
+zip_store	.mp4:.pak:.metallib
+
+# ---- Memory ----
+mem_reserve	0x140000000
+mem_alias	0x118000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 80 MB of system resource
+sys_resource	0x5000000
+
+# ---- Shader split ----
+# the decoded shader code archives: the engine's global shaders and the game's material shaders
+shader_groups	ShaderArchive-Global-=global ShaderArchive-=game
+shader_note	Minecraft Dungeons shaders
+
+# ---- Address region check ----
+# the game calls nvnDeviceSetDepthMode with near = 0 in the check boot (build 1): the pipeline bases made before it runs are made for that mode
+depth_mode	zero
+
+# ---- Frame rate ----
+# main's fixups (build 1) found UE_CVAR rhi.SyncInterval, t.MaxFPS and r.Streaming.PoolSize and the UE_FIXED_RATE pointers:
+# the ue_cvar pattern is confirmed for this build, so the host-written interval is all 60 and 120 need (same as Dungeons II)
+fps_target	60
+fps_max	120
