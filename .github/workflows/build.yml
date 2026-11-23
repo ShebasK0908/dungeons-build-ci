@@ -1,4 +1,4 @@
-name: Build Minecraft Dungeons (nxnative)
+name: Build Minecraft Dungeons (nxnative) — build 2 (perfil fusionado + bring-up)
 
 on:
   workflow_dispatch:
@@ -71,6 +71,30 @@ jobs:
           test $(stat -f%z game.xci) -eq 7930147840
           python3 -c "d=open('game.xci','rb'); d.seek(0x100); assert d.read(4)==b'HEAD', 'magic HEAD no encontrado'; print('XCI HEAD ok')"
 
+      - name: Sembrar el perfil FUSIONADO (build 2)
+        run: |
+          # Perfil revisado a mano (profile/game.tsv en este repo): la build lo reutiliza y SALTA el survey.
+          # Claves nuevas frente a la build 1: pad_layout full, fps_target 60 / fps_max 120 (patrón ue_cvar
+          # confirmado por los fixups de la build 1), depth_mode zero (detectado en su check boot) y los
+          # build IDs reales de la v1769472. SIN op_mode: el modo lo elige el usuario en el lanzador.
+          PDIR=~/Games/Dungeons/01006C100EC08000_build/profile/01006C100EC08000
+          mkdir -p "$PDIR"
+          cp "$GITHUB_WORKSPACE/profile/"* "$PDIR/"
+          ls -la "$PDIR"
+          grep -E '^(pad_layout|fps_target|fps_max|depth_mode|romfs_marker)' "$PDIR/game.tsv"
+
+      - name: Bring-up — boot de comprobación largo en el host de Mac (240 s en nnMain)
+        run: |
+          # La build 1 solo dejó correr el juego 15 s en nnMain en su check de regiones: la intro es un
+          # vídeo y el título (primera escena 3D real) llega después. Con 240 s el check boot de ESTA
+          # build atraviesa la intro y carga el título en el host: si el error fatal se reproduce en Mac,
+          # queda escrito en logs/region_check.log (se sube como artefacto al final). El check no tumba
+          # la build si el host se para: informa y sigue.
+          S=~/nxnative/scripts/build_ipa_from_nsp.py
+          sed -i '' 's/^REGION_CHECK_NNMAIN_SECS = 15 /REGION_CHECK_NNMAIN_SECS = 240 /' "$S"
+          grep -n '^REGION_CHECK_NNMAIN_SECS' "$S"
+          grep -q '^REGION_CHECK_NNMAIN_SECS = 240' "$S"
+
       - name: Build del IPA (idioma del juego - español)
         run: |
           python3 ~/nxnative/scripts/build_ipa_from_nsp.py ~/Games/Dungeons -k ~/keys/prod.keys -l es --no-keep-extracted
@@ -86,4 +110,14 @@ jobs:
           ls -la "$IPA"
           split -b 1900m "$IPA" ipa-part-
           PARTS=$(ls ipa-part-*)
-          gh release create dungeons-ipa $PARTS --repo ShebasK0908/dungeons-build --title "Minecraft Dungeons IPA (privado)" --notes "Build propia del usuario desde su copia (perfil provisional, sin perfil upstream). No compartir." || gh release upload dungeons-ipa $PARTS --clobber --repo ShebasK0908/dungeons-build
+          gh release create dungeons-ipa $PARTS --repo ShebasK0908/dungeons-build --title "Minecraft Dungeons IPA (privado)" --notes "Build 2 del usuario desde su copia (perfil fusionado + bring-up de 240 s). No compartir." || gh release upload dungeons-ipa $PARTS --clobber --repo ShebasK0908/dungeons-build
+
+      - name: Subir logs y perfil final (diagnóstico del bring-up)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build2-logs-y-perfil
+          path: |
+            ~/Games/Dungeons/01006C100EC08000_build/logs
+            ~/Games/Dungeons/01006C100EC08000_build/profile
+          if-no-files-found: ignore
